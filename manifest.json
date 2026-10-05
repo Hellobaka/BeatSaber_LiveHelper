@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/bsmg/BSIPA-MetadataFileSchema/master/Schema.json",
+  "id": "LiveHelper",
+  "name": "LiveHelper",
+  "author": "LiveHelper",
+  "version": "1.0.0",
+  "description": "Local Beat Saber gameplay stats overlay",
+  "gameVersion": "1.45.1",
+  "dependsOn": { "BSIPA": "^4.3.5" }
+}

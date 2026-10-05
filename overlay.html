@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LiveHelper overlay</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --ink: #f4f9ff;
+            --muted: #c4d0dc;
+            --red: #ff5d70;
+            --blue: #49d9f2;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: transparent !important;
+        }
+
+        body {
+            font-family: "Segoe UI", "Microsoft YaHei UI", sans-serif;
+            color: var(--ink);
+        }
+
+        .overlay {
+            display: none;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            padding: 18px 20px;
+        }
+
+        body.visible .overlay {
+            display: block;
+        }
+
+        .song {
+            width: max-content;
+            min-width: min(260px, 50vw);
+            max-width: 50vw;
+            margin: 0;
+            padding: 10px 14px 11px;
+            background: rgba(10, 19, 32, .84);
+            border-left: 4px solid #eaf6ff;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, .28);
+        }
+
+        .song-title {
+            overflow-wrap: anywhere;
+            white-space: normal;
+            font-size: clamp(19px, 1.55vw, 23px);
+            font-weight: 750;
+            letter-spacing: -.025em;
+            line-height: 1.18;
+        }
+
+        .song-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 12px;
+            align-items: baseline;
+            width: 100%;
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.35;
+            font-weight: 560;
+        }
+
+            .song-meta span {
+                white-space: nowrap;
+            }
+
+            .song-meta b {
+                color: var(--ink);
+                font-weight: 700;
+            }
+
+            .song-meta .artist {
+                max-width: 60%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+        .pause {
+            display: none;
+            color: #ffe4a1;
+        }
+
+        body.paused .pause {
+            display: inline;
+        }
+
+        .hands {
+            width: min(390px, 100%);
+            margin-top: 16px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .hand {
+            padding: 18px 20px 19px;
+            background: rgba(10, 19, 32, .83);
+            box-shadow: 0 7px 24px rgba(0, 0, 0, .24);
+            border-left: 5px solid var(--accent);
+        }
+
+            .hand.left {
+                --accent: var(--red);
+            }
+
+            .hand.right {
+                --accent: var(--blue);
+            }
+
+        .hand-name {
+            display: flex;
+            align-items: baseline;
+            gap: 11px;
+            font-size: 22px;
+            font-weight: 750;
+        }
+
+            .hand-name::before {
+                content: "";
+                width: 11px;
+                height: 11px;
+                background: var(--accent);
+                transform: rotate(45deg);
+            }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 11px 20px;
+            margin-top: 15px;
+        }
+
+        .metric-label {
+            display: block;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .metric-value {
+            display: block;
+            margin-top: 3px;
+            font-size: 25px;
+            line-height: 1.1;
+            font-variant-numeric: tabular-nums;
+            font-weight: 710;
+        }
+
+            .metric-value em {
+                font-style: normal;
+                font-size: .6em;
+                color: var(--muted);
+                margin-left: 3px;
+            }
+
+        body.results .current-speed {
+            display: none;
+        }
+
+        @media (max-width: 700px) {
+            .overlay {
+                padding: 12px;
+            }
+
+            .song {
+                padding: 9px 11px;
+            }
+
+            .song-meta .artist {
+                max-width: 100%;
+            }
+
+            .hands {
+                width: min(340px, 100%);
+                margin-top: 12px;
+            }
+
+            .hand {
+                padding: 13px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="overlay" aria-label="Beat Saber 实时数据">
+        <header class="song">
+            <div class="song-title" id="title"></div>
+            <div class="song-meta">
+                <span class="artist" id="artist"></span><span id="difficulty"></span>
+                <span>方块 <b id="note-count"></b></span><span>平均 <b id="average-nps"></b> NPS</span>
+                <span>历史游玩 <b id="plays"></b> 次</span><span>最佳完成率 <b id="best-rate"></b></span>
+                <span>最佳连击 <b id="best-combo"></b></span><span>最佳分数 <b id="best-score"></b></span><span class="pause">已暂停</span>
+            </div>
+        </header>
+        <section class="hands" aria-label="双手数据">
+            <div class="hand left">
+                <div class="hand-name">左手</div><div class="metrics">
+                    <div><span class="metric-label">完成</span><span class="metric-value" id="left-completed"></span></div>
+                    <div><span class="metric-label">失误</span><span class="metric-value" id="left-missed"></span></div>
+                    <div><span class="metric-label">失误率</span><span class="metric-value" id="left-miss-rate"></span></div>
+                    <div><span class="metric-label">平均准度</span><span class="metric-value" id="left-accuracy"></span></div>
+                    <div class="current-speed"><span class="metric-label">当前流速</span><span class="metric-value" id="left-nps"></span></div>
+                </div>
+            </div>
+            <div class="hand right">
+                <div class="hand-name">右手</div><div class="metrics">
+                    <div><span class="metric-label">完成</span><span class="metric-value" id="right-completed"></span></div>
+                    <div><span class="metric-label">失误</span><span class="metric-value" id="right-missed"></span></div>
+                    <div><span class="metric-label">失误率</span><span class="metric-value" id="right-miss-rate"></span></div>
+                    <div><span class="metric-label">平均准度</span><span class="metric-value" id="right-accuracy"></span></div>
+                    <div class="current-speed"><span class="metric-label">当前流速</span><span class="metric-value" id="right-nps"></span></div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <script>
+        (() => {
+            const wsUrl = `ws://${location.hostname}:6734/ws`;
+
+            const field = id => document.getElementById(id);
+            const set = (id, value) => { field(id).textContent = String(value); };
+            const number = (value, digits = 1) => value == null || !Number.isFinite(value) ? '—' : Number(value).toFixed(digits);
+            const whole = value => value == null || !Number.isFinite(value) ? '—' : Number(value).toLocaleString('zh-CN');
+            const percent = value => value == null || !Number.isFinite(value) ? '—' : `${number(value)}%`;
+            let reconnectDelay = 500;
+            function clear() { document.body.classList.remove('visible', 'paused', 'results'); }
+            function sizeSong() {
+                const title = field('title');
+                const box = document.querySelector('.song');
+                title.style.whiteSpace = 'nowrap';
+                title.style.width = 'max-content';
+                const titleWidth = title.getBoundingClientRect().width;
+                title.style.whiteSpace = '';
+                title.style.width = '';
+                const style = getComputedStyle(box);
+                const chrome = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) +
+                    parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth);
+                const limit = innerWidth * 0.5;
+                box.style.width = `${Math.min(limit, Math.max(Math.min(260, limit), Math.ceil(titleWidth + chrome)))}px`;
+            }
+            function hand(prefix, data) {
+                set(`${prefix}-completed`, data.completed);
+                set(`${prefix}-missed`, data.missed);
+                set(`${prefix}-miss-rate`, percent(data.missRate));
+                set(`${prefix}-accuracy`, percent(data.averageAccuracy));
+                set(`${prefix}-nps`, number(data.currentNps, 2));
+            }
+            function render(data) {
+                if (!data || data.state === 'hidden' || !data.song) { clear(); return; }
+                const song = data.song;
+                set('title', song.title);
+                set('artist', song.artist);
+                set('difficulty', song.difficulty);
+                set('note-count', song.noteCount);
+                set('average-nps', number(song.averageNps, 2));
+                set('plays', song.previousPlays);
+                set('best-rate', percent(song.bestCompletionRate));
+                set('best-combo', whole(song.bestCombo));
+                set('best-score', whole(song.bestScore));
+                hand('left', data.left);
+                hand('right', data.right);
+                document.body.classList.toggle('paused', data.state === 'paused');
+                document.body.classList.toggle('results', data.state === 'results');
+                document.body.classList.add('visible');
+                sizeSong();
+            }
+            window.addEventListener('resize', () => { if (document.body.classList.contains('visible')) sizeSong(); });
+            document.fonts.ready.then(() => { if (document.body.classList.contains('visible')) sizeSong(); });
+            function connect() {
+                const socket = new WebSocket(wsUrl);
+                socket.onopen = () => { reconnectDelay = 500; };
+                socket.onmessage = event => { try { render(JSON.parse(event.data)); } catch { clear(); } };
+                socket.onclose = () => { clear(); setTimeout(connect, reconnectDelay); reconnectDelay = Math.min(reconnectDelay * 2, 5000); };
+                socket.onerror = () => socket.close();
+            }
+            clear();
+            connect();
+        })();
+    </script>
+</body>
+</html>
