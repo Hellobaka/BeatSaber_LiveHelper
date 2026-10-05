@@ -10,7 +10,7 @@
 ## 安装方式
 
 1. 已安装BSPIA框架
-2. 从[Release](https://github.com/Hellobaka/BeatSaber_LiveHelper/release/latest)下载文件，并在游戏根目录解压
+2. 从[Release](https://github.com/Hellobaka/BeatSaber_LiveHelper/releases/latest)下载文件，并在游戏根目录解压
 
 ## OBS添加源方式
 
